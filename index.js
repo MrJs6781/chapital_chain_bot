@@ -9,7 +9,7 @@ const app = createApp(storage, config);
 const bot = createBot(storage, config);
 (async () => {
   await storage.initDb()
-  app.listen(config.port);
+  app.listen(config.port, "0.0.0.0");
   bot.launch();
   await bot.telegram.setMyCommands([
     { command: "start", description: "شروع" },

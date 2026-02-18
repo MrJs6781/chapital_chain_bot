@@ -1,7 +1,31 @@
 const { Pool } = require('pg')
-const url = process.env.DATABASE_URL
-const ssl = process.env.PG_SSL === 'true' ? { rejectUnauthorized: process.env.PG_SSL_REJECT_UNAUTHORIZED !== 'false' } : undefined
-const pool = new Pool({ connectionString: url, ssl })
+function makePool() {
+  const ssl = process.env.PG_SSL === 'true' ? { rejectUnauthorized: process.env.PG_SSL_REJECT_UNAUTHORIZED !== 'false' } : undefined
+  const url = process.env.DATABASE_URL
+  if (url && String(url).trim().length) {
+    try {
+      // Validate URL to fail-fast with a clear message
+      // Avoid logging secrets
+      new URL(String(url))
+    } catch (e) {
+      const msg = 'Invalid DATABASE_URL. Use postgres://user:pass@host:port/db (encode special chars in pass)'
+      const err = new Error(msg)
+      err.cause = e
+      throw err
+    }
+    return new Pool({ connectionString: String(url), ssl })
+  }
+  const host = process.env.PGHOST || process.env.PG_HOST || 'localhost'
+  const port = Number(process.env.PGPORT || process.env.PG_PORT || 5432)
+  const user = process.env.PGUSER || process.env.PG_USER
+  const password = process.env.PGPASSWORD || process.env.PG_PASSWORD
+  const database = process.env.PGDATABASE || process.env.PG_DATABASE
+  if (!user || !database) {
+    throw new Error('Missing DATABASE_URL or PGUSER/PGPASSWORD/PGDATABASE for Postgres connection')
+  }
+  return new Pool({ host, port, user, password, database, ssl })
+}
+const pool = makePool()
 async function q(text, params) { return pool.query(text, params || []) }
 async function initDb() {}
 async function upsertUser(from) {

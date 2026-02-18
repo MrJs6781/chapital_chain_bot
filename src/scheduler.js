@@ -1,7 +1,12 @@
 function createScheduler(storage, bot, config) {
   async function runDue() {
     const nowIso = new Date().toISOString()
-    const due = await storage.listDueBroadcasts(nowIso)
+    let due = []
+    try {
+      due = await storage.listDueBroadcasts(nowIso)
+    } catch {
+      return
+    }
     for (const b of due) {
       const filters = typeof b.filters === 'string' ? JSON.parse(b.filters || '{}') : (b.filters || {})
       const ids = await storage.getRecipients(filters)
