@@ -15,7 +15,8 @@ function superPool() {
   const host = process.env.PG_HOST || 'localhost'
   const port = process.env.PG_PORT ? Number(process.env.PG_PORT) : 5432
   const user = process.env.PG_SUPER_USER || 'postgres'
-  const password = process.env.PG_SUPER_PASSWORD || undefined
+  const pwRaw = process.env.PG_SUPER_PASSWORD
+  const password = pwRaw !== undefined ? String(pwRaw) : undefined
   return new Pool({ host, port, user, password, database: 'postgres', ssl: sslFromEnv('PG_SUPER') })
 }
 
@@ -32,7 +33,8 @@ function appPoolAsSuper(db) {
 function appPool(db, user, password) {
   const host = process.env.PG_HOST || 'localhost'
   const port = process.env.PG_PORT ? Number(process.env.PG_PORT) : 5432
-  return new Pool({ host, port, user, password, database: db, ssl: sslFromEnv('PG') })
+  const pw = password !== undefined ? String(password) : undefined
+  return new Pool({ host, port, user, password: pw, database: db, ssl: sslFromEnv('PG') })
 }
 
 async function ensureRole(client, role, pass) {
@@ -108,7 +110,7 @@ async function createTables(appClient) {
 async function main() {
   const db = process.env.PG_APP_DB || 'telegram_bot'
   const user = process.env.PG_APP_USER || 'bot_user'
-  const pass = process.env.PG_APP_PASSWORD
+  const pass = process.env.PG_APP_PASSWORD !== undefined ? String(process.env.PG_APP_PASSWORD) : undefined
   if (!pass) {
     console.error('PG_APP_PASSWORD is required')
     process.exit(1)
